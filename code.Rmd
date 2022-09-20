@@ -1,0 +1,253 @@
+---
+title: "paper-code"
+author: "Younghee Go"
+date: '2022 8 1 '
+output: 
+  html_document :
+    toc : true
+---
+
+```{r}
+getwd()
+setwd("C:/Users/koh99/바탕 화면/Labs_KGU/LAB_PBL/paper")
+
+
+library(data.table)
+library(MASS)
+library(dplyr)
+library(caret)
+library(car)
+```
+
+```{r}
+df=fread('data_final.csv')
+str(df)
+```
+
+```{r}
+dim(df)
+```
+
+# Full model
+```{r}
+full.model<-lm(log_price ~ . , data=df)
+summary(full.model)
+
+vif(full.model)
+```
+## CV-full model
+```{r}
+r2<-c()
+rmse<-c()
+mae<-c()
+
+r2.trn<-c()
+rmse.trn<-c()
+mae.trn<-c()
+
+K=5
+set.seed(2022)
+fold<-sample(rep(1:K,length=nrow(df)))
+
+for (i in 1:K){
+  # train-test split
+  train<-df[which(fold!=i),] 
+  test<-df[which(fold==i),]
+  
+  # pred-train
+  model<-lm(log_price ~ . , data=train, na.action=na.omit)
+  pred<-model%>%predict(train)
+  
+  # metric-train
+  r2.trn<-c(r2.trn,R2(pred,train$log_price))
+  rmse.trn<-c(rmse.trn,RMSE(pred,train$log_price))
+  mae.trn<-c(mae.trn,MAE(pred,train$log_pric))
+  
+  # metric-test
+  pred.test<-model%>%predict(test)
+  r2<-c(r2,R2(pred.test,test$log_price))
+  rmse<-c(rmse,RMSE(pred.test,test$log_price))
+  mae<-c(mae,MAE(pred.test,test$log_price))
+  
+}
+
+train_res1<-data.frame(R2=r2.trn, RMSE=rmse.trn,MAE=mae.trn)
+test_res1<-data.frame(R2=r2, RMSE=rmse,MAE=mae)
+
+colMeans(train_res1)
+colMeans(test_res1)
+```
+
+# Stepwise-full model
+```{r}
+step.model=stepAIC(full.model,direction='both',trace=FALSE)
+summary(step.model)
+
+vif(step.model)
+```
+
+## CV-stepwise(Full)
+```{r}
+r2<-c()
+rmse<-c()
+mae<-c()
+
+r2.trn<-c()
+rmse.trn<-c()
+mae.trn<-c()
+
+K=5
+set.seed(2022)
+fold<-sample(rep(1:K,length=nrow(df)))
+
+for (i in 1:K){
+  # train-test split
+  train<-df[which(fold!=i),] 
+  test<-df[which(fold==i),]
+  
+  # pred-train
+  model<-stepAIC(full.model,direction='both',trace=FALSE)
+  pred<-model%>%predict(train)
+  
+  # metric-train
+  r2.trn<-c(r2.trn,R2(pred,train$log_price))
+  rmse.trn<-c(rmse.trn,RMSE(pred,train$log_price))
+  mae.trn<-c(mae.trn,MAE(pred,train$log_pric))
+  
+  # metric-test
+  pred.test<-model%>%predict(test)
+  r2<-c(r2,R2(pred.test,test$log_price))
+  rmse<-c(rmse,RMSE(pred.test,test$log_price))
+  mae<-c(mae,MAE(pred.test,test$log_price))
+}
+
+train_res2<-data.frame(R2=r2.trn, RMSE=rmse.trn,MAE=mae.trn)
+test_res2<-data.frame(R2=r2, RMSE=rmse,MAE=mae)
+
+colMeans(train_res2)
+colMeans(test_res2)
+```
+
+# Interaction
+```{r}
+inter.model<-lm(log_price ~ . + year*brand + 
+                  year*item_condition_id+ year*cpu_cnt+year*memory+sales_price*item_condition_id,
+                data=df, na.action=na.omit)
+summary(inter.model)
+
+vif(inter.model)
+```
+## CV-interaction
+```{r}
+r2<-c()
+rmse<-c()
+mae<-c()
+
+r2.trn<-c()
+rmse.trn<-c()
+mae.trn<-c()
+
+K=5
+set.seed(2022)
+fold<-sample(rep(1:K,length=nrow(df)))
+
+for (i in 1:K){
+  # train-test split
+  train<-df[which(fold!=i),] 
+  test<-df[which(fold==i),]
+  
+  # pred-train
+  model<-lm(log_price ~ . + year*brand 
+                          + year*item_condition_id
+                          + year*cpu_cnt
+                          +year*memory
+                          +sales_price*item_condition_id,
+            data=train, na.action=na.omit)
+  pred<-model%>%predict(train)
+  
+  # metric-train
+  r2.trn<-c(r2.trn,R2(pred,train$log_price))
+  rmse.trn<-c(rmse.trn,RMSE(pred,train$log_price))
+  mae.trn<-c(mae.trn,MAE(pred,train$log_pric))
+  
+  # metric-test
+  pred.test<-model%>%predict(test)
+  r2<-c(r2,R2(pred.test,test$log_price))
+  rmse<-c(rmse,RMSE(pred.test,test$log_price))
+  mae<-c(mae,MAE(pred.test,test$log_price))
+  
+}
+
+train_res3<-data.frame(R2=r2.trn, RMSE=rmse.trn,MAE=mae.trn)
+test_res3<-data.frame(R2=r2, RMSE=rmse,MAE=mae)
+
+colMeans(train_res3)
+colMeans(test_res3)
+
+
+```
+
+# Stepwise-interaction
+```{r}
+instep.model=stepAIC(inter.model,direction='both',trace=FALSE)
+summary(instep.model)
+vif(instep.model)
+```
+
+## CV-stepwise(Inter)
+```{r}
+r2<-c()
+rmse<-c()
+mae<-c()
+
+r2.trn<-c()
+rmse.trn<-c()
+mae.trn<-c()
+
+K=5
+set.seed(2022)
+fold<-sample(rep(1:K,length=nrow(df)))
+
+for (i in 1:K){
+  # train-test split
+  train<-df[which(fold!=i),] 
+  test<-df[which(fold==i),]
+  
+  # pred-train
+  model<-stepAIC(inter.model,direction='both',trace=FALSE)
+  pred<-model%>%predict(train)
+  
+  # metric-train
+  r2.trn<-c(r2.trn,R2(pred,train$log_price))
+  rmse.trn<-c(rmse.trn,RMSE(pred,train$log_price))
+  mae.trn<-c(mae.trn,MAE(pred,train$log_pric))
+  
+  # metric-test
+  pred.test<-model%>%predict(test)
+  r2<-c(r2,R2(pred.test,test$log_price))
+  rmse<-c(rmse,RMSE(pred.test,test$log_price))
+  mae<-c(mae,MAE(pred.test,test$log_price))
+  
+}
+
+train_res4<-data.frame(R2=r2.trn, RMSE=rmse.trn,MAE=mae.trn)
+test_res4<-data.frame(R2=r2, RMSE=rmse,MAE=mae)
+
+colMeans(train_res4)
+colMeans(test_res4)
+```
+
+# Comparison
+```{r}
+colMeans(train_res1)
+colMeans(test_res1)
+
+colMeans(train_res2)
+colMeans(test_res2)
+
+colMeans(train_res3)
+colMeans(test_res3)
+
+colMeans(train_res4)
+colMeans(test_res4)
+```

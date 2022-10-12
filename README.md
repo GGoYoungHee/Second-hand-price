@@ -1,10 +1,14 @@
 # Second-hand-tablet-price-prediction
 [Paper] An Analysis of Price Influencing Factors for Used Tablets
 
+at Journal of Industrial Convergence.
+
 
 # 분석 과정
 ## 1. 데이터 전처리
-- 가장 힘들었음
+
+- 가장 힘들었음, Real World data는 생각보다 노이즈가 엄청엄청 많았고, 거래에서 박스만 파는 경우(이건 대체 왜 파는지 모르겠음... $5근처 정도로 팔던데)와 같이 태블릿 판매 섹션에 이런 데이터가 들어오는 지도 모르겠고, 태블릿을 판매하는 경우인데 pc탭에서 발견되는 경우도 종종 있었다. 따라서 태블릿 판매 섹션에서만 데이터를 보는 게 아니라 전 섹션에서 데이터를 한번씩 훓는 과정이 필요했다. 
+- real world data는 너무나도 방대해서 excel에서 직접 접근하는 것도 로드하지 못했다. python을 이용하여 전처리를 하였고, 진짜 이 과정에서 에너지도 많이 소비하고 시간도 엄청 많이 걸렸다.
 
 ## 2. 모델링
 a)

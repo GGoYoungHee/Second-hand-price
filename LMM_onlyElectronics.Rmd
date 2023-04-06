@@ -1,0 +1,145 @@
+---
+title: "LMM_Electronics"
+author: "Go young hee"
+date: '2021 2 9 '
+output: html_document
+---
+
+## install package
+```{r}
+#getwd()
+library(data.table)
+library(dplyr)
+library(olsrr)
+library(lme4)
+library(ggplot2)
+```
+
+
+## data load
+```{r}
+df<-fread("train_eda_fin.csv")
+head(df)
+```
+
+## data Preprocessing
+```{r}
+df_el<-df%>%subset(category_1=="Electronics")
+head(df_el)
+```
+
+## modeling
+
+#### 1. Category_2
+
+1.1 fixed effect
+  
+  - no random effect = linear regression, Exclude Category2 variable
+```{r}
+cate2_aic1<-lm(formula=log_price~item_condition_id+shipping,data=df_el)%>%AIC()
+print(cate2_aic1) # 127450.3
+```
+
+  - no random effect ,Category2 is the fixed effect
+  - increase dimension : Category2 as a factor
+```{r}
+cate2_aic2<-lm(formula=log_price~item_condition_id+shipping+category_2,data=df_el)%>%AIC()
+print(cate2_aic2) # 123349.8
+```
+
+1.2 random effect
+  
+  - random intercept: category2
+```{r}
+cate2_aic3<-lmer(formula=log_price~item_condition_id+shipping+(1|category_2),data=df_el)%>%AIC()
+print(cate2_aic3) # 123405.3
+```
+
+  - random intercept + random slope (item_condition_id)
+```{r}
+cate2_aic4<-lmer(formula=log_price~item_condition_id+shipping+(item_condition_id|category_2),data=df_el)%>%AIC()
+
+print(cate2_aic4) # 121357.5
+```
+
+  - random intercept + random slope(Shipping)
+```{r}
+cate2_aic5<-lmer(formula=log_price~item_condition_id+shipping+(shipping|category_2),data=df_el)%>%AIC()
+
+print(cate2_aic5) # 122907.7
+```
+
+#### 2. category3
+
+2.1 fixed effect
+  - no random effect = linear regression, Exclude Category3 variable
+  - It is same on 1.1 fixed effect
+```{r}
+cate3_aic1<-lm(formula=log_price~item_condition_id+shipping,data=df_el)%>%AIC()
+print(cate3_aic1) # 127450.3
+```
+
+  - no random effect ,Category3 is the fixed effect
+  - increase dimension : Category3 as a factor
+```{r}
+cate3_aic2<-lm(formula=log_price~item_condition_id+shipping+category_3,data=df_el)%>%AIC()
+print(cate3_aic2) # 105427.5
+```
+
+2.2 random effect
+  
+  - random intercept: category3
+```{r}
+cate3_aic3<-lmer(formula=log_price~item_condition_id+shipping+(1|category_3),data=df_el)%>%AIC()
+print(cate3_aic3) # 105613.1
+```
+  - random intercept + random slope (item_condition_id)
+```{r}
+cate3_aic4<-lmer(formula=log_price~item_condition_id+shipping+(item_condition_id|category_3),data=df_el)%>%AIC()
+
+print(cate3_aic4) # 104258.4
+```
+
+
+  - random intercept + random slope(Shipping)
+```{r}
+cate3_aic5<-lmer(formula=log_price~item_condition_id+shipping+(shipping|category_3),data=df_el)%>%AIC()
+
+print(cate3_aic5) # 105177
+```
+
+
+# compare the models 
+```{r}
+
+cate2_aic<-c(cate2_aic1,cate2_aic2,cate2_aic3,cate2_aic4,cate2_aic5)
+print(cate2_aic)
+
+cate3_aic<-c(cate3_aic1,cate3_aic2,cate3_aic3,cate3_aic4,cate3_aic5)
+print(cate3_aic)
+```
+
+  - Visualization
+```{r}
+aic_df<-data.frame(value=c(cate2_aic,cate3_aic),
+                   random.effect=c(rep('category2',5),rep('category3',5)),
+                   model=rep(c('model1','model2','model3','model4','model5'),2))
+nrow(aic_df)
+aic_df
+
+p1<-ggplot(data=aic_df,aes(x=model,y=value,color=random.effect,group=random.effect))+
+  geom_line(aes(linetype=random.effect))+
+  geom_point(size=3)+ # alpha는 투명도 조절
+  theme(axis.text.x=element_text(angle=45,vjust=1,hjust=1))+
+  ylab("AIC")+
+  scale_colour_grey(start=0.7, end=0.3)
+p1
+#ggsave("0. model compare.png",p1,scale=0.8)
+```
+
+# Final model
+
+```{r}
+model<-lmer(formula=log_price~item_condition_id+shipping+(item_condition_id|category_3),data=df_el)
+summary(model)
+```
